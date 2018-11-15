@@ -200,6 +200,22 @@ module.exports = function(grunt) {
             }
         },
 
+        write_package_json: {
+            electron: {
+                main: "js/index-electron.js",
+                scripts: {
+                  start: "electron ."
+                }
+            },
+            webapp: {},
+            node: {
+                main: "js/index-node.js",
+                scripts: {
+                  start: "node ."
+                }
+            }
+        },
+
         rename: {
             webapp_backend: {
                 src: ["build/app/js/backend/index-webapp.js"],
@@ -215,6 +231,14 @@ module.exports = function(grunt) {
             },
             electron_html: {
                 src: ["build/app/index-electron.html"],
+                dest: "build/app/index.html"
+            },
+            node_backend: {
+                src: ["build/app/js/backend/index-node.js"],
+                dest: "build/app/js/backend/index.js"
+            },
+            node_html: {
+                src: ["build/app/index-node.html"],
                 dest: "build/app/index.html"
             }
         },
@@ -385,7 +409,10 @@ module.exports = function(grunt) {
         return prev.concat(["compress:" + platform]);
     }, []));
 
-    grunt.registerTask("write_package_json", function () {
+    grunt.registerMultiTask("write_package_json", function () {
+        for (let key in this.data) {
+            pkg[key] = this.data[key];
+        }
         grunt.file.write("build/app/package.json", JSON.stringify(pkg));
     });
 
@@ -404,13 +431,12 @@ module.exports = function(grunt) {
         grunt.file.write(workDir + "/debian/control", nunjucks.render("debian/control", this.data));
         grunt.file.write(workDir + "/debian/links", nunjucks.render("debian/links", this.data));
         grunt.file.write(workDir + "/debian/rules", nunjucks.render("debian/rules", this.data));
-        execSync("dpkg-buildpackage -a" + this.data.arch, {cwd: workDir});
+        execSync("dpkg-buildpackage --no-sign -a " + this.data.arch, {cwd: workDir});
     });
 
     grunt.registerTask("lint", ["jshint", "csslint"]);
 
     grunt.registerTask("build", [
-        "write_package_json",
         "newer:babel",
         "browserify:player", // Cannot use 'newer' here due to imports
         "newer:uglify:player",
@@ -421,6 +447,7 @@ module.exports = function(grunt) {
     ]);
 
     grunt.registerTask("electron-build",  [
+        "write_package_json:electron",
         "build",
         "rename:electron_backend",
         "rename:electron_html",
@@ -430,9 +457,19 @@ module.exports = function(grunt) {
     ]);
 
     grunt.registerTask("web-build", [
+        "write_package_json:webapp",
         "build",
         "rename:webapp_backend",
         "rename:webapp_html",
+        "browserify:editor", // Cannot use 'newer' here due to imports
+        "newer:uglify:editor"
+    ]);
+
+    grunt.registerTask("node-build", [
+        "write_package_json:node",
+        "build",
+        "rename:node_backend",
+        "rename:node_html",
         "browserify:editor", // Cannot use 'newer' here due to imports
         "newer:uglify:editor"
     ]);

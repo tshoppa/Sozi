@@ -4,10 +4,6 @@
   "author": "Guillaume Savaton",
   "version": "18.10.20",
   "license": "MPL-2.0",
-  "main": "js/electron.js",
-  "scripts": {
-    "start": "electron js/electron.js"
-  },
   "repository": {
     "type": "git",
     "url": "http://github.com/senshu/Sozi.git"
