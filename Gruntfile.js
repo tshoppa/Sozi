@@ -212,7 +212,9 @@ module.exports = function(grunt) {
                 main: "js/index-node.js",
                 scripts: {
                   start: "node ."
-                }
+              },
+              devDependencies: {},
+              dependencies: {}
             }
         },
 
