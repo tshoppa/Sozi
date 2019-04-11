@@ -11,6 +11,14 @@ const BROWSER_CMD = "firefox";
 
 function handleRequest(req, res) {
     console.log(`Request: ${req.url}`);
+
+    /* Requests
+     *
+     * List directory.
+     * Get local file (SVG, JSON).
+     * Create/Update local file (JSON, HTML).
+     * Poll file change status.
+     */
 }
 
 http.createServer(handleRequest).listen(PORT, () => {
