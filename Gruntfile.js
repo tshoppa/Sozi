@@ -468,7 +468,7 @@ module.exports = function(grunt) {
             execSync(`tar cJf ${dest} ${src}`, opts);
         }
         else if (dest.endsWith(".zip")) {
-            execSync(`zip -ry ${dest} ${src}`, opts);
+            execSync(`zip -r ${dest} ${src}`, opts);
         }
     });
 
@@ -585,6 +585,14 @@ module.exports = function(grunt) {
     grunt.registerTask("extras", [
         "compress:media-inkscape-0.92",
         "compress:media-inkscape-1.0"
+    ]);
+
+         grunt.registerTask("update-template", [
+        "newer:babel",
+        "browserify:player",
+        "newer:uglify:player",
+        "newer:nunjucks_render:player",
+        "newer:copy:editor"
     ]);
 
     // Build the Electron application, and generate zip archives and Debian packages if applicable.

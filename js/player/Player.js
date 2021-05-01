@@ -151,7 +151,7 @@ export class Player extends EventEmitter {
             document.title = this.presentation.title + " \u2014 " + this.currentFrame.title;
         });
     }
-
+    
     /** Move to the next or previous frame on each click event in the viewport.
      *
      * This method is registered as a {@linkcode module:player/Viewport.click|click}
@@ -238,6 +238,7 @@ export class Player extends EventEmitter {
                 break;
 
             default:
+                userInteractionEnd();
                 return;
         }
 
@@ -402,7 +403,7 @@ export class Player extends EventEmitter {
      * @listens module:player/Viewport.dragStart
      * @fires {module:player/Player.stateChange}
      */
-    pause() {
+    pause(isUITrigger) {
         this.animator.stop();
         if (this.waitingTimeout) {
             window.clearTimeout(this.timeoutHandle);
@@ -410,6 +411,7 @@ export class Player extends EventEmitter {
         }
         if (this.playing) {
             this.playing = false;
+            if(isUITrigger) this.emit("localChange", {change:"pause"});
             this.emit("stateChange");
         }
         this.targetFrame = this.currentFrame;
@@ -417,6 +419,7 @@ export class Player extends EventEmitter {
 
     /** Resume playing from the current frame. */
     resume() {
+        if(isUITrigger) this.emit("localChange", {change:"pause"});
         this.playFromFrame(this.currentFrame);
     }
 
@@ -451,12 +454,13 @@ export class Player extends EventEmitter {
      *
      * @fires {module:player/Player.frameChange}
      */
-    jumpToFrame(frame) {
+    jumpToFrame(frame, isUiTrigger) {
         this.disableBlankScreen();
 
         this.pause();
 
         this.targetFrame = this.currentFrame = this.findFrame(frame);
+        if(isUiTrigger) this.emit("localChange", this.currentFrame);
         this.showCurrentFrame();
     }
 
@@ -464,32 +468,32 @@ export class Player extends EventEmitter {
      *
      * @fires {module:player/Player.frameChange}
      */
-    jumpToFirst() {
-        this.jumpToFrame(0);
+    jumpToFirst(isUITrigger) {
+        this.jumpToFrame(0, isUITrigger);
     }
 
     /** Jump to the last frame of the presentation.
      *
      * @fires {module:player/Player.frameChange}
      */
-    jumpToLast() {
-        this.jumpToFrame(this.presentation.frames.length - 1);
+    jumpToLast(isUITrigger) {
+        this.jumpToFrame(this.presentation.frames.length - 1,isUITrigger);
     }
 
     /** Jump to the previous frame.
      *
      * @fires {module:player/Player.frameChange}
      */
-    jumpToPrevious() {
-        this.jumpToFrame(this.previousFrame);
+    jumpToPrevious(isUITrigger) {
+        this.jumpToFrame(this.previousFrame, isUITrigger);
     }
 
     /** Jumps to the next frame.
      *
      * @fires {module:player/Player.frameChange}
      */
-    jumpToNext() {
-        this.jumpToFrame(this.nextFrame);
+    jumpToNext(isUITrigger) {
+        this.jumpToFrame(this.nextFrame,isUITrigger);
     }
 
     /** Move to a frame.
@@ -506,7 +510,7 @@ export class Player extends EventEmitter {
      * @fires {module:player/Player.frameChange}
      * @fires {module:player/Player.stateChange}
      */
-    moveToFrame(frame) {
+    moveToFrame(frame,isUITrigger) {
         this.disableBlankScreen();
 
         if (this.waitingTimeout) {
@@ -515,6 +519,8 @@ export class Player extends EventEmitter {
         }
 
         this.targetFrame = this.findFrame(frame);
+        if(isUserInteraction) this.emit("localChange", this.targetFrame);
+ 
 
         let layerProperties = null;
         let durationMs = DEFAULT_TRANSITION_DURATION_MS;
@@ -565,8 +571,8 @@ export class Player extends EventEmitter {
      * @fires {module:player/Player.frameChange}
      * @fires {module:player/Player.stateChange}
      */
-    moveToFirst() {
-        this.moveToFrame(0);
+    moveToFirst(isUITrigger) {
+        this.moveToFrame(0, isUITrigger);
     }
 
     /** Move to the last frame of the presentation.
@@ -574,8 +580,8 @@ export class Player extends EventEmitter {
      * @fires {module:player/Player.frameChange}
      * @fires {module:player/Player.stateChange}
      */
-    moveToLast() {
-        this.moveToFrame(this.presentation.frames.length - 1);
+    moveToLast(isUITrigger) {
+        this.moveToFrame(this.presentation.frames.length - 1, isUITrigger);
     }
 
     /** Move to the previous frame.
@@ -585,11 +591,11 @@ export class Player extends EventEmitter {
      * @fires {module:player/Player.frameChange}
      * @fires {module:player/Player.stateChange}
      */
-    moveToPrevious() {
+    moveToPrevious(isUITrigger) {
         for (let index = this.previousFrame.index; index >= 0; index --) {
             const frame = this.presentation.frames[index];
             if (!frame.timeoutEnable || frame.timeoutMs !== 0) {
-                this.moveToFrame(frame);
+                this.moveToFrame(frame, isUITrigger);
                 break;
             }
         }
@@ -600,8 +606,8 @@ export class Player extends EventEmitter {
      * @fires {module:player/Player.frameChange}
      * @fires {module:player/Player.stateChange}
      */
-    moveToNext() {
-        this.moveToFrame(this.nextFrame);
+    moveToNext(isUITrigger) {
+        this.moveToFrame(this.nextFrame, isUITrigger);
     }
 
     /** Restore the current frame.
@@ -627,8 +633,10 @@ export class Player extends EventEmitter {
      * @fires {module:player/Player.frameChange}
      * @fires {module:player/Player.stateChange}
      */
-    previewFrame(frame) {
+    previewFrame(frame, isUITrigger) {
         this.targetFrame = this.findFrame(frame);
+        if(isUITrigger) this.emit("localChange", this.targetFrame);
+ 
 
         for (let camera of this.viewport.cameras) {
             this.setupTransition(camera, DEFAULT_TIMING_FUNCTION, DEFAULT_RELATIVE_ZOOM);
@@ -751,7 +759,9 @@ export class Player extends EventEmitter {
     }
 
     /** Toggle the visibility of the elements that hides the viewport. */
-    toggleBlankScreen() {
+    toggleBlankScreen(isUITrigger) {
+        if(isUITrigger) this.emit("localChange", {change:"blankScreen", value:this.blankScreenIsVisible});
+        
         if (this.blankScreenIsVisible) {
             this.disableBlankScreen();
         }
