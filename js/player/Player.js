@@ -46,113 +46,28 @@ const SCALE_FACTOR = 1.05;
  * @type {number} */
 const ROTATE_STEP = 5;
 
-/** Signals that the player has moved to a new frame.
- *
- * @event module:player/Player.frameChange
- */
-
-/** Signals that the player has changed its `playing` status.
- *
- * @event module:player/Player.stateChange
- */
-
-/** Sozi presentation player.
- *
- * @extends EventEmitter
- */
-export class Player extends EventEmitter {
-
-    /** Initialize a new Sozi player.
-     *
-     * If the presentation is opened in edit mode, the player will disable
-     * these features:
-     * - mouse and keyboard actions for navigating in the presentation,
-     * - automatic transitions after a timeout.
-     *
-     * @param {module:player/Viewport.Viewport} viewport - The viewport where the presentation is rendered.
-     * @param {module:model/Presentation.Presentation} presentation - The presentation to play.
-     * @param {boolean} [editMode=false] - Is the presentation opened in edit mode?
-     */
-    constructor(viewport, presentation, editMode = false) {
+class Controller extends EventEmitter {
+    constructor(player, viewport, presentation, editMode){
         super();
-
-        /** Is the presentation opened in edit mode?
-         *
-         * @default false
-         * @type {boolean} */
-        this.editMode = !!editMode;
-
-        /** The viewport where the presentation is rendered.
-         *
-         * @type {module:player/Viewport.Viewport} */
+        
+        this.player = player;
         this.viewport = viewport;
-
-        /** The presentation to play.
-         *
-         * @type {module:model/Presentation.Presentation} */
         this.presentation = presentation;
-
-        /** An animator to control the transitions.
-         *
-         * @type {module:player/Animator.Animator} */
-        this.animator = new Animator();
-
-        /** The playing/paused state of this player.
-         *
-         * @default
-         * @type {boolean} */
-        this.playing = false;
-
-        /** Is the player waiting for a frame timeout to complete?
-         *
-         * @default
-         * @type {boolean} */
-        this.waitingTimeout = false;
-
-        /** The current frame of the presentation.
-         *
-         * @type {module:model/Presentation.Frame} */
-        this.currentFrame = presentation.frames[0];
-
-        /** The target frame of the current transition.
-         *
-         * @type {module:model/Presentation.Frame} */
-        this.targetFrame = presentation.frames[0];
-
-        /** The result of `setTimeout` when starting waiting for a frame timeout.
-         *
-         * @default
-         * @type {?number} */
-        this.timeoutHandle = null;
-
-        /** An array of tansition descriptors for each camera.
-         *
-         * @default
-         * @type {object[]}
-         * @see {@linkcode module:player/Player.Player#setupTransition}
-         */
-        this.transitions = [];
-
-        if (!this.editMode) {
+        
+        if (!editMode) {
             this.viewport.on("click", btn => this.onClick(btn));
-            window.addEventListener("keydown", evt => this.onKeyDown(evt), false);
+                window.addEventListener("keydown", evt => this.onKeyDown(evt), false);
+                
             if (this.presentation.enableMouseTranslation) {
-                this.viewport.on("dragStart", () => this.pause());
+                this.viewport.on("dragStart", () => player.pause());
             }
-            this.viewport.on("userChangeState", () => this.pause());
+            
+            this.viewport.on("userChangeState", () => player.pause());
             window.addEventListener("keypress", evt => this.onKeyPress(evt), false);
         }
-        this.animator.on("step", p => this.onAnimatorStep(p));
-        this.animator.on("stop", () => this.onAnimatorStop());
-        this.animator.on("done", () => this.onAnimatorDone());
-
-        this.on("frameChange", () => {
-            // TODO Only if frame is not transient.
-            document.title = this.presentation.title + " \u2014 " + this.currentFrame.title;
-        });
     }
-
-    /** Move to the next or previous frame on each click event in the viewport.
+    
+        /** Move to the next or previous frame on each click event in the viewport.
      *
      * This method is registered as a {@linkcode module:player/Viewport.click|click}
      * event handler of the current {@linkcode module:player/Viewport.Viewport|viewport}.
@@ -262,22 +177,19 @@ export class Player extends EventEmitter {
         switch (evt.charCode || evt.which) {
             case 43: // +
                 if (this.presentation.enableKeyboardZoom) {
-                    this.viewport.zoom(SCALE_FACTOR, this.viewport.width / 2, this.viewport.height / 2);
-                    this.pause();
+                    this.zoom(SCALE_FACTOR);
                 }
                 break;
 
             case 45: // -
                 if (this.presentation.enableKeyboardZoom) {
-                    this.viewport.zoom(1 / SCALE_FACTOR, this.viewport.width / 2, this.viewport.height / 2);
-                    this.pause();
+                    this.zoom(1 / SCALE_FACTOR);
                 }
                 break;
 
             case 82: // R
                 if (this.presentation.enableKeyboardRotation) {
-                    this.viewport.rotate(-ROTATE_STEP);
-                    this.pause();
+                    this.rotate(-ROTATE_STEP);
                 }
                 break;
 
@@ -290,12 +202,7 @@ export class Player extends EventEmitter {
 
             case 80: // P
             case 112: //p
-                if (this.playing) {
-                    this.pause();
-                }
-                else {
-                    this.resume();
-                }
+                this.togglePause();
                 break;
 
             case 46: // .
@@ -310,6 +217,204 @@ export class Player extends EventEmitter {
 
         evt.stopPropagation();
         evt.preventDefault();
+    }
+    
+    lastFrame(){
+        return this.player.presentation.frames.length - 1;
+    }
+    
+    /** Jumps to the first frame of the presentation.
+     *
+     * @fires {module:player/Player.frameChange}
+     */
+    jumpToFirst() {
+        this.player.jumpToFrame(0);
+    }
+
+    /** Jump to the last frame of the presentation.
+     *
+     * @fires {module:player/Player.frameChange}
+     */
+    jumpToLast() {
+        this.player.jumpToFrame(this.lastFrame());
+    }
+
+    /** Jump to the previous frame.
+     *
+     * @fires {module:player/Player.frameChange}
+     */
+    jumpToPrevious() {
+        this.player.jumpToFrame(this.player.previousFrame);
+    }
+
+    /** Jumps to the next frame.
+     *
+     * @fires {module:player/Player.frameChange}
+     */
+    jumpToNext() {
+        this.player.jumpToFrame(this.player.nextFrame);
+    }
+    
+    /** Move to the first frame of the presentation.
+     *
+     * @fires {module:player/Player.frameChange}
+     * @fires {module:player/Player.stateChange}
+     */
+    moveToFirst() {
+        this.player.moveToFrame(0);
+    }
+
+    moveToPrevious(){
+        this.player.moveToPrevious();
+    }
+    
+    /** Move to the next frame.
+     *
+     * @fires {module:player/Player.frameChange}
+     * @fires {module:player/Player.stateChange}
+     */
+    moveToNext() {
+        this.player.moveToNext();
+    }
+    
+        /** Move to the last frame of the presentation.
+     *
+     * @fires {module:player/Player.frameChange}
+     * @fires {module:player/Player.stateChange}
+     */
+    moveToLast() {
+        this.player.moveToFrame(this.lastFrame());
+    }
+    
+    rotate(steps){
+        this.viewport.rotate(steps);
+        this.player.pause();
+    }
+    
+
+    zoom(factor){
+        this.viewport.zoom(factor, this.viewport.width / 2, this.viewport.height / 2);
+        this.player.pause();
+    }
+    
+    togglePause(){
+        if (this.player.playing) {
+            this.player.pause();
+        }
+        else {
+            this.player.playFromFrame(this.player.currentFrame);
+        }
+    }
+    
+    /** Toggle the visibility of the elements that hides the viewport. */
+    toggleBlankScreen() {
+        if (this.player.blankScreenIsVisible) {
+            this.player.disableBlankScreen();
+        }
+        else {
+            this.player.enableBlankScreen();
+        }
+    }
+}
+
+
+/** Signals that the player has moved to a new frame.
+ *
+ * @event module:player/Player.frameChange
+ */
+
+/** Signals that the player has changed its `playing` status.
+ *
+ * @event module:player/Player.stateChange
+ */
+
+/** Sozi presentation player.
+ *
+ * @extends EventEmitter
+ */
+export class Player extends EventEmitter {
+
+    /** Initialize a new Sozi player.
+     *
+     * If the presentation is opened in edit mode, the player will disable
+     * these features:
+     * - mouse and keyboard actions for navigating in the presentation,
+     * - automatic transitions after a timeout.
+     *
+     * @param {module:player/Viewport.Viewport} viewport - The viewport where the presentation is rendered.
+     * @param {module:model/Presentation.Presentation} presentation - The presentation to play.
+     * @param {boolean} [editMode=false] - Is the presentation opened in edit mode?
+     */
+    constructor(viewport, presentation, editMode = false) {
+        super();
+
+        /** Is the presentation opened in edit mode?
+         *
+         * @default false
+         * @type {boolean} */
+        this.editMode = !!editMode;
+
+        /** The viewport where the presentation is rendered.
+         *
+         * @type {module:player/Viewport.Viewport} */
+        this.viewport = viewport;
+
+        /** The presentation to play.
+         *
+         * @type {module:model/Presentation.Presentation} */
+        this.presentation = presentation;
+
+        /** An animator to control the transitions.
+         *
+         * @type {module:player/Animator.Animator} */
+        this.animator = new Animator();
+
+        /** The playing/paused state of this player.
+         *
+         * @default
+         * @type {boolean} */
+        this.playing = false;
+
+        /** Is the player waiting for a frame timeout to complete?
+         *
+         * @default
+         * @type {boolean} */
+        this.waitingTimeout = false;
+
+        /** The current frame of the presentation.
+         *
+         * @type {module:model/Presentation.Frame} */
+        this.currentFrame = presentation.frames[0];
+
+        /** The target frame of the current transition.
+         *
+         * @type {module:model/Presentation.Frame} */
+        this.targetFrame = presentation.frames[0];
+
+        /** The result of `setTimeout` when starting waiting for a frame timeout.
+         *
+         * @default
+         * @type {?number} */
+        this.timeoutHandle = null;
+
+        /** An array of tansition descriptors for each camera.
+         *
+         * @default
+         * @type {object[]}
+         * @see {@linkcode module:player/Player.Player#setupTransition}
+         */
+        this.transitions = [];
+        
+        this.controller = new Controller(this, this.viewport, this.presentation, this.editMode);
+
+        this.animator.on("step", p => this.onAnimatorStep(p));
+        this.animator.on("stop", () => this.onAnimatorStop());
+        this.animator.on("done", () => this.onAnimatorDone());
+
+        this.on("frameChange", () => {
+            // TODO Only if frame is not transient.
+            document.title = this.presentation.title + " \u2014 " + this.currentFrame.title;
+        });
     }
 
     /** Find a frame by its ID or number.
@@ -415,11 +520,6 @@ export class Player extends EventEmitter {
         this.targetFrame = this.currentFrame;
     }
 
-    /** Resume playing from the current frame. */
-    resume() {
-        this.playFromFrame(this.currentFrame);
-    }
-
     /** Starts waiting before moving to the next frame.
      *
      * If the current frame has a timeout set, this method
@@ -458,38 +558,6 @@ export class Player extends EventEmitter {
 
         this.targetFrame = this.currentFrame = this.findFrame(frame);
         this.showCurrentFrame();
-    }
-
-    /** Jumps to the first frame of the presentation.
-     *
-     * @fires {module:player/Player.frameChange}
-     */
-    jumpToFirst() {
-        this.jumpToFrame(0);
-    }
-
-    /** Jump to the last frame of the presentation.
-     *
-     * @fires {module:player/Player.frameChange}
-     */
-    jumpToLast() {
-        this.jumpToFrame(this.presentation.frames.length - 1);
-    }
-
-    /** Jump to the previous frame.
-     *
-     * @fires {module:player/Player.frameChange}
-     */
-    jumpToPrevious() {
-        this.jumpToFrame(this.previousFrame);
-    }
-
-    /** Jumps to the next frame.
-     *
-     * @fires {module:player/Player.frameChange}
-     */
-    jumpToNext() {
-        this.jumpToFrame(this.nextFrame);
     }
 
     /** Move to a frame.
@@ -558,24 +626,6 @@ export class Player extends EventEmitter {
         }
 
         this.animator.start(durationMs);
-    }
-
-    /** Move to the first frame of the presentation.
-     *
-     * @fires {module:player/Player.frameChange}
-     * @fires {module:player/Player.stateChange}
-     */
-    moveToFirst() {
-        this.moveToFrame(0);
-    }
-
-    /** Move to the last frame of the presentation.
-     *
-     * @fires {module:player/Player.frameChange}
-     * @fires {module:player/Player.stateChange}
-     */
-    moveToLast() {
-        this.moveToFrame(this.presentation.frames.length - 1);
     }
 
     /** Move to the previous frame.
@@ -747,16 +797,6 @@ export class Player extends EventEmitter {
         if (blankScreen) {
             blankScreen.style.opacity = 0;
             blankScreen.style.visibility = "hidden";
-        }
-    }
-
-    /** Toggle the visibility of the elements that hides the viewport. */
-    toggleBlankScreen() {
-        if (this.blankScreenIsVisible) {
-            this.disableBlankScreen();
-        }
-        else {
-            this.enableBlankScreen();
         }
     }
 
