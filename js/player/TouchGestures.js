@@ -284,11 +284,11 @@ class SingleGesture extends Gesture {
         switch (direction) {
             case "down":
             case "left":
-                player.moveToNext();
+                player.controller.moveToNext();
                 break;
             case "up":
             case "right":
-                player.moveToPrevious();
+                player.controller.moveToPrevious();
                 break;
         }
     }

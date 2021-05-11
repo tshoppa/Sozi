@@ -14,6 +14,14 @@ import * as FrameNumber from "./player/FrameNumber";
 import * as FrameURL from "./player/FrameURL";
 import * as TouchGestures from "./player/TouchGestures";
 
+
+/** identifies this presentation to be in presenter mode.
+ *  in presenter mode message events will be forwared to the player rather then to the player's controller. 
+ * 
+ *  @default
+ */
+let isPresenterMode = false;
+
 /** Put the current  player in presenter mode.
  *
  * This function is used by the presenter console that uses several
@@ -21,15 +29,17 @@ import * as TouchGestures from "./player/TouchGestures";
  *
  * In presenter mode, keyboard and mouse navigation are disabled,
  * frame numbers are hidden, hyperlink in the previous and next views are
- * disabled, and in the current view, hyperlink ckicks are forwarded to the
+ * disabled, and in the current view, hyperlink clicks are forwarded to the
  * main presentation window.
  *
  * @param {Window} mainWindow - The browser window that plays the main presentation.
  * @param {boolean} isCurrent - Is the current player showing the current frame?
  */
 function setPresenterMode(mainWindow, isCurrent) {
+    isPresenterMode = true;
     sozi.player.disableMedia();
     sozi.player.pause();
+    
 
     sozi.presentation.enableMouseTranslation =
     sozi.presentation.enableMouseNavigation =
@@ -91,7 +101,13 @@ function notifyOnFrameChange(presenterWindow) {
 }
 
 // Process messages from a presenter console.
-window.addEventListener("message", evt => {
+window.addEventListener("message", evt => onMessage(evt), false);
+
+/** Process messages from or to presenter console windows. 
+ * 
+ * @param {MessageEvent} evt - The DOM event to process.
+ */
+function onMessage(evt){
     switch (evt.data.name) {
         case "notifyOnFrameChange":
             // Install an event handler to forward the frame change event
@@ -114,17 +130,18 @@ window.addEventListener("message", evt => {
         default: {
             // Interpret a message as a method call to the current Sozi player.
             // The message must be of the form: {name: string, args: any[]}.
-            const method = sozi.player[evt.data.name];
+            var receiver = isPresenterMode ? sozi.player : sozi.player.controller;
+            const method = receiver[evt.data.name];
             const args   = evt.data.args || [];
             if (typeof method === "function") {
-                method.apply(sozi.player, args);
+                method.apply(receiver, args);
             }
             else {
                 console.log(`Unsupported message: ${evt.data.name}`);
             }
         }
     }
-}, false);
+}
 
 // Initialize the Sozi player when the document is loaded.
 window.addEventListener("load", () => {
