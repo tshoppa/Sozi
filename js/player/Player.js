@@ -344,7 +344,7 @@ class Controller extends EventEmitter {
      * @fires {module:player/Player.stateChange}
      */
     previewFrame(frame) {
-        let f = this.player.findFrame(f);
+        let f = this.player.findFrame(frame);
         this.emit("localChange", {change:"previewFrame", value:f});
         this.player.previewFrame(f);
     }
@@ -358,7 +358,7 @@ class Controller extends EventEmitter {
      * @fires {module:player/Player.stateChange}
      */
     jumpToFrame(frame){
-        let f = this.player.findFrame(f);
+        let f = this.player.findFrame(frame);
         this.emit("localChange", {change:"jumpToFrame", value:f});
         this.player.jumpToFrame(f);
     }  
@@ -372,9 +372,9 @@ class Controller extends EventEmitter {
      * @fires {module:player/Player.stateChange}
      */
     moveToFrame(frame){
-        let f = this.player.findFrame(f);
+        let f = this.player.findFrame(frame);
         this.emit("localChange", {change:"moveToFrame", value:f});
-        this.player.jumpToFrame(f);
+        this.player.moveToFrame(f);
     }  
 
     

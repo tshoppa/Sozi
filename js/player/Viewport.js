@@ -370,6 +370,15 @@ class Controller extends EventEmitter{
         }
     }
     
+    /** helper for zoom.
+     *
+     * @param {number} factor - The zoom factor.
+     * @param {number} x - The x coordinate of the screenpoint to focus while zooming.
+     * @param {number} y - The y coordinate of the screenpoint to focus while zooming.
+     *
+     * @fires {module:player/Player.localChange}
+     *
+     */
     zoom(factor, x, y){
         this.emit("localChange", {change: "interactive"});
         this.viewport.zoom(factor, x, y);
