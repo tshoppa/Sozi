@@ -90,7 +90,7 @@ export function init(p) {
     for (let link of links) {
         link.addEventListener("click", evt => {
             if (evt.button === 0) {
-                player.controller.previewFrame(link.hash.slice(1));
+                sozi.uicontroller.previewFrame(link.hash.slice(1));
                 evt.preventDefault();
             }
         });

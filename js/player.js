@@ -8,6 +8,7 @@ import {SVGDocumentWrapper} from "./svg/SVGDocumentWrapper";
 import {Presentation} from "./model/Presentation";
 import {Viewport} from "./player/Viewport";
 import {Player} from "./player/Player";
+import {UIController} from "./player/UIController";
 import * as Media from "./player/Media";
 import * as FrameList from "./player/FrameList";
 import * as FrameNumber from "./player/FrameNumber";
@@ -130,7 +131,7 @@ function onMessage(evt){
         default: {
             // Interpret a message as a method call to the current Sozi player.
             // The message must be of the form: {name: string, args: any[]}.
-            var receiver = isPresenterMode ? sozi.player : sozi.player.controller;
+            var receiver = isPresenterMode ? sozi.player : sozi.uicontroller;
             const method = receiver[evt.data.name];
             const args   = evt.data.args || [];
             if (typeof method === "function") {
@@ -156,6 +157,8 @@ window.addEventListener("load", () => {
 
     presentation.fromStorable(window.soziPresentationData);
     const player = new Player(viewport, presentation);
+    
+    const uicontroller = new UIController(player, false);
 
     Media.init(player);
     FrameList.init(player);
@@ -167,7 +170,8 @@ window.addEventListener("load", () => {
     window.sozi = {
         presentation,
         viewport,
-        player
+        player,
+        uicontroller
     };
 
     player.on("stateChange", () => {
