@@ -85,7 +85,7 @@ class Controller extends EventEmitter {
             window.addEventListener("keydown", evt => this.onKeyDown(evt), false);
                 
             if (this.presentation.enableMouseTranslation) {
-                this.viewport.on("dragStart", () => player.pause());
+                this.viewport.controller.on("dragStart", () => this.player.pause());
             }
             
             this.viewport.on("userChangeState", () => player.pause());
@@ -391,7 +391,7 @@ class Controller extends EventEmitter {
     }
     
 
-    /** helper for step zoom in as well as out
+    /** helper for step zoom focusing a mid screen center coordinate
      *    
      * @param {number} factor - The scaling factor, above 1 to zoom in, below 1 to zoom out.
      *
@@ -415,7 +415,7 @@ class Controller extends EventEmitter {
             this.player.playFromFrame(this.player.currentFrame);
         }
         
-        this.emit("localChange", {change:"pause"});
+        this.emit("localChange", {change:"pause", value:this.player.playing});
     }
     
     /** Toggle the visibility of the elements that hides the viewport. 
