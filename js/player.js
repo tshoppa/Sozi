@@ -164,7 +164,7 @@ window.addEventListener("load", () => {
     FrameList.init(player);
     FrameNumber.init(player);
     FrameURL.init(player);
-    TouchGestures.init(player, presentation);
+    TouchGestures.init(uicontroller, player, presentation);
 
 
     window.sozi = {

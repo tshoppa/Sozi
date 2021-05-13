@@ -233,8 +233,6 @@ export class Player extends EventEmitter {
      * in the current frame, then it stops waiting.
      * The current animation is stopped in its current state.
      *
-     * @listens module:player/Viewport.userChangeState
-     * @listens module:player/Viewport.dragStart
      * @fires {module:player/Player.stateChange}
      */
     pause() {

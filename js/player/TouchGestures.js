@@ -77,6 +77,12 @@ let player;
  * @type {module:model/Presentation.Presentation} */
 let presentation;
 
+/** The current Sozi uicontroller.
+ * This is where all input is delegated to.
+ *
+ * @type {module:model/Player.UIController} */
+let uicontroller;
+
 /** When playing the presentation, are touch gestures enabled?
  *
  * Inferred from
@@ -284,11 +290,11 @@ class SingleGesture extends Gesture {
         switch (direction) {
             case "down":
             case "left":
-                player.controller.moveToNext();
+                uicontroller.moveToNext();
                 break;
             case "up":
             case "right":
-                player.controller.moveToPrevious();
+                uicontroller.moveToPrevious();
                 break;
         }
     }
@@ -390,7 +396,7 @@ class DoubleGesture extends Gesture {
         if (this.zoomEnabled) {
             const zoom = (actLine.getSqrLength() / this.lastLine.getSqrLength());
             const mid = actLine.getMidpoint();
-            player.viewport.zoom(zoom, mid.x, mid.y);
+            uicontroller.zoom(zoom, mid.x, mid.y);
         }
         else {
             // Check threshhold to enable zoom.
@@ -408,7 +414,7 @@ class DoubleGesture extends Gesture {
     rotate(actLine) {
         if (this.rotateEnabled) {
             const rotate = actLine.getAngle(this.lastLine);
-            player.viewport.rotate(rotate);
+            uicontroller.rotate(rotate);
         }
         else {
             // Check threshhold to enable rotation.
@@ -425,7 +431,7 @@ class DoubleGesture extends Gesture {
     translate(actLine) {
         const panX = actLine.getXDist(this.lastLine);
         const panY = actLine.getYDist(this.lastLine);
-        player.viewport.translate(panX, panY);
+        uicontroller.translate(panX, panY);
     }
 
 
@@ -575,10 +581,12 @@ function onTouchEnd(evt) {
  *
  * This function adds touch listeners to the given parent.
  *
+ * @param {module:player/Player.UIController} uic - The player's ui controller.
  * @param {module:player/Player.Player} pl - The current Player.
  * @param {module:model/Presentation.Presentation} pr - The presentation to play.
  */
-export function init(pl, pr) {
+export function init(uic, pl, pr) {
+    uicontroller = uic;
     player = pl;
     presentation = pr;
 

@@ -44,6 +44,31 @@ const DRAG_THRESHOLD_PX = 5;
  * @type {number} */
 const WHEEL_TIMEOUT_MS = 200;
 
+/** Signals a mouse click in a viewport.
+ *
+ * @event module:player/Viewport.click
+ */
+
+/** Signals a mouse button press in a viewport.
+ *
+ * @event module:player/Viewport.mouseDown
+ */
+
+/** Signals the possible start of a drag gesture in a viewport.
+ *
+ * @event module:player/Viewport.dragStart
+ */
+
+/** Signals the end of a drag gesture in a viewport.
+ *
+ * @event module:player/Viewport.dragEnd
+ */
+
+/** Signals a user-activated change in the camera states of a viewport.
+ *
+ * @event module:player/Viewport.userChangeState
+ */
+
 /** Signals that an user interaction triggered a change to the player's state.
  *
  * @event module:player/Player.localChange
@@ -156,7 +181,7 @@ export class UIController extends EventEmitter {
             window.addEventListener("keydown", evt => this.onKeyDown(evt), false);
                 
             if (this.presentation.enableMouseTranslation) {
-                this.viewport.on("dragStart", () => player.pause());
+                this.viewport.on("dragStart", () => this.player.pause());
             }
             
             this.viewport.on("userChangeState", () => player.pause());
